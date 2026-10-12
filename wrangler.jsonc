@@ -22,7 +22,7 @@
     {
       "binding": "DB",
       "database_name": "onm-personal-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "7a5e1b1c-419d-4dc8-a850-815c483016b7",
       "migrations_dir": "migrations"
     }
   ],
