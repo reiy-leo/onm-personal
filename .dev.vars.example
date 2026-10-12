@@ -1,0 +1,18 @@
+# 复制为 .dev.vars（已 gitignore），只用于本地 wrangler dev。线上用 wrangler secret put。
+
+# Google OAuth 2.0 Web client（Google Cloud Console → APIs & Services → Credentials）
+# 授权回调：https://m.rei8t.dev/auth/callback 与 http://localhost:8787/auth/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# 签名 session cookie 的密钥。本项目单独生成，不与其他项目共用：openssl rand -base64 48
+SESSION_SECRET=
+
+# 可选：本地跳过登录（只对 localhost 生效，线上无效）
+# AUTH_DISABLED=true
+
+# 可选：覆盖 wrangler.jsonc 里的 vars
+# ADMIN_EMAILS=reiy.leoz@gmail.com
+# MAX_IMAGE_MB=20
+# MAX_TEXT_KB=1024
+# OAUTH_REDIRECT_URI=http://localhost:8787/auth/callback

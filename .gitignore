@@ -1,0 +1,13 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+public/
+worker-inline/assets.generated.ts
+.DS_Store
+*.log
+# 私钥永远不入库
+*.pem
+*_deploy
+id_ed25519*

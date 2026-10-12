@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onm-personal",
+  "account_id": "9151f72e404dd53f20b8e6667893237d",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  // 自定义域名（zone: rei8t.dev）
+  "routes": [{ "pattern": "m.rei8t.dev", "custom_domain": true }],
+  "observability": { "enabled": true },
+  // 前端（React + Kumo）：pnpm build 把 web/ 构建到 ./public。
+  // /assets/* 由 Static Assets 直接响应；其余请求先进 Worker（直链、API、注入页面数据）。
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/*", "!/assets/*"]
+  },
+  // 文件元数据 + 文本版本。部署前：npx wrangler d1 create onm-personal-db，把 database_id 填进来，
+  // 再 pnpm db:migrate:remote。本地 wrangler dev 不需要真实 id。
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "onm-personal-db",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // 图片。部署前：npx wrangler r2 bucket create onm-personal
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "onm-personal" }],
+  "vars": {
+    // 只有这些 Google 账号能上传 / 编辑 / 删除（逗号分隔）
+    "ADMIN_EMAILS": "reiy.leoz@gmail.com",
+    // 单文件上限
+    "MAX_IMAGE_MB": "20",
+    "MAX_TEXT_KB": "1024"
+  }
+  // Secrets（不要提交；wrangler secret put … 或在 CF 控制台添加）：
+  //   SESSION_SECRET（必填，本项目单独生成）、GOOGLE_CLIENT_ID、GOOGLE_CLIENT_SECRET
+  // Google Cloud 授权回调地址：https://m.rei8t.dev/auth/callback 与 http://localhost:8787/auth/callback
+  // 可选 var OAUTH_REDIRECT_URI（默认 <origin>/auth/callback）。AUTH_DISABLED 仅供本地 .dev.vars 使用。
+}
