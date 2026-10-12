@@ -55,6 +55,9 @@ export const DEFAULT_MAX_TEXT_KB = 1024;
 /** 每个文本最多保留的版本数没有上限；单次列表最多返回的版本数。 */
 export const MAX_NAME_LENGTH = 200;
 
+/** 每个文本最多保留的版本数；保存新版本时删掉更早的。 */
+export const MAX_VERSIONS = 5;
+
 export const extOf = (name: string) => {
   const m = /\.([A-Za-z0-9]{1,10})$/.exec(name.trim());
   return m ? m[1]!.toLowerCase() : "";

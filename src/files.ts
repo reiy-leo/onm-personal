@@ -1,6 +1,6 @@
 // 文件与文本版本的存取：元数据和文本内容在 D1，图片二进制在 R2。
 import { limitsOf, type Env } from "./env.ts";
-import { IMAGE_TYPES, MAX_NAME_LENGTH, TEXT_TYPES, extOf, kindOf, type FileKind } from "./shared/limits.ts";
+import { IMAGE_TYPES, MAX_NAME_LENGTH, MAX_VERSIONS, TEXT_TYPES, extOf, kindOf, type FileKind } from "./shared/limits.ts";
 import type { FileView, ListResponse, VersionMeta, VersionView } from "./shared/types.ts";
 
 export class InputError extends Error {
@@ -269,6 +269,8 @@ export async function saveVersion(
     await env.DB.batch([
       env.DB.prepare("INSERT INTO text_versions (file_id, version, content, size, note, created_at) VALUES (?, ?, ?, ?, ?, ?)").bind(id, next, content, size, note, now),
       env.DB.prepare("UPDATE files SET current_version = ?, size = ?, updated_at = ? WHERE id = ? AND current_version = ?").bind(next, size, now, id, current),
+      // 只保留最近 MAX_VERSIONS 个版本
+      env.DB.prepare("DELETE FROM text_versions WHERE file_id = ? AND version <= ?").bind(id, next - MAX_VERSIONS),
     ]);
   } catch (e) {
     // 主键冲突 = 并发保存

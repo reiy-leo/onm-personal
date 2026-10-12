@@ -74,7 +74,7 @@ pnpm deploy | pnpm deploy:inline      # 部署（需 Rei 同意）
 - 不要提交任何密钥（`.dev.vars`、私钥、token）；不要把密钥写进文档或 memory
 - 不要绕过 `getAdmin()` 或同源校验做写操作；不要放宽 `AUTH_DISABLED` 只认 localhost 的判断
 - 不要把公开内容以可执行的 HTML / SVG 返回（保持 CSP sandbox、raw 为 text/plain）
-- 不要修改已存在的 migration；不要删除文本历史版本（回滚也是新增版本）
+- 不要修改已存在的 migration；文本只保留最近 MAX_VERSIONS（5）个版本，除这条自动清理外不要删版本（回滚也是新增版本）
 - 未经 Rei 同意不部署
 
 ## 工作约定

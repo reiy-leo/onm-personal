@@ -286,7 +286,7 @@ export function EditorPage({ id }: { id: string }) {
             <div className="grid gap-1.5">
               <Dialog.Title className="text-base font-semibold">回滚到 v{preview?.version}？</Dialog.Title>
               <Dialog.Description className="text-kumo-subtle">
-                会把 v{preview?.version} 的内容另存为新版本 v{baseVersion + 1}，现有历史全部保留。
+                会把 v{preview?.version} 的内容另存为新版本 v{baseVersion + 1}，最多保留最近 5 个版本，最早的会被清理。
                 {dirty ? "编辑器里未保存的修改会被丢弃。" : ""}
               </Dialog.Description>
             </div>

@@ -151,6 +151,16 @@ const page2 = await (await api(`/api/files?limit=3&cursor=${list.nextCursor}`)).
 assert.equal(page2.files.length, 1);
 assert.equal(page2.nextCursor, null);
 
+// ---- 只保留最近 5 个版本 ----
+for (const c of ["v5", "v6"]) {
+  const cur = (await (await api(`/api/texts/${t.id}`)).json() as { file: { version: number } }).file.version;
+  assert.equal((await api(`/api/texts/${t.id}`, "PUT", { content: c, baseVersion: cur })).status, 200);
+}
+versions = (await (await api(`/api/texts/${t.id}/versions`)).json() as { versions: typeof versions }).versions;
+assert.deepEqual(versions.map((v) => v.version), [6, 5, 4, 3, 2], "超过 5 个删最早的");
+assert.equal((await api(`/api/texts/${t.id}/rollback`, "POST", { version: 1 })).status, 404, "已清理的版本不能回滚");
+assert.equal((await call(guest, `/t/${t.id}/raw?v=1`)).status, 404);
+
 res = await api(`/api/files/${img.id}`, "PATCH", { name: "封面" });
 assert.equal((await res.json() as { file: { name: string } }).file.name, "封面.png", "改名保留扩展名");
 
