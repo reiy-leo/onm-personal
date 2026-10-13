@@ -188,10 +188,10 @@ export function EditorPage({ id }: { id: string }) {
             className="hidden sm:inline-flex"
             onClick={async () => {
               await navigator.clipboard.writeText(file.urls.raw).catch(() => {});
-              toast.add({ title: "已复制 raw 链接", description: file.urls.raw, variant: "success" });
+              toast.add({ title: "已复制原文链接", description: file.urls.raw, variant: "success" });
             }}
           >
-            复制 raw 链接
+            复制原文链接
           </Button>
         )}
         <Button variant={historyOpen ? "secondary" : "ghost"} icon={ClockCounterClockwiseIcon} onClick={() => setHistoryOpen((o) => !o)}>

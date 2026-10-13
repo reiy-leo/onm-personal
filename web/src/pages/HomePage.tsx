@@ -62,6 +62,9 @@ function Thumb({ f }: { f: FileView }) {
   );
 }
 
+/** raw 链接的中文名：图片叫「原图链接」，文本叫「原文链接」（最新版纯文本）。 */
+const rawLabel = (f: FileView) => (f.kind === "image" ? "原图链接" : "原文链接");
+
 const copyText = async (s: string) => {
   await navigator.clipboard.writeText(s).catch(() => {});
 };
@@ -142,7 +145,7 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
         upsert(file);
         if (list.length === 1) {
           await copyText(file.urls.raw);
-          toast.add({ title: "上传成功，raw 链接已复制", description: file.urls.raw, variant: "success" });
+          toast.add({ title: `上传成功，${rawLabel(file)}已复制`, description: file.urls.raw, variant: "success" });
         }
       } catch (e) {
         setUploads((prev) => prev.map((u) => (u.key === key ? { ...u, status: "error", error: e instanceof Error ? e.message : String(e) } : u)));
@@ -151,10 +154,10 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** 复制按钮统一复制 raw 链接：图片是原图直链，文本是最新版原文。 */
+  /** 复制按钮统一复制 raw 链接（原图链接 / 原文链接）：图片是原图直链，文本是最新版原文。 */
   const copyLink = async (f: FileView) => {
     await copyText(f.urls.raw);
-    toast.add({ title: "已复制 raw 链接", description: f.urls.raw, variant: "success" });
+    toast.add({ title: `已复制${rawLabel(f)}`, description: f.urls.raw, variant: "success" });
   };
   const openNew = () => {
     if (!requireLogin("新建文本需要先登录。")) return;
@@ -219,7 +222,7 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     <DropdownMenu>
       <DropdownMenu.Trigger render={<Button variant="ghost" size="sm" shape="square" icon={DotsThreeIcon} aria-label={`${f.name} 的操作`} />} />
       <DropdownMenu.Content align="end">
-        <DropdownMenu.Item icon={CopyIcon} onClick={() => copyLink(f)}>复制 raw 链接</DropdownMenu.Item>
+        <DropdownMenu.Item icon={CopyIcon} onClick={() => copyLink(f)}>复制{rawLabel(f)}</DropdownMenu.Item>
         <DropdownMenu.LinkItem icon={ArrowSquareOutIcon} href={f.urls.view} target="_blank">打开</DropdownMenu.LinkItem>
         {f.kind === "text" && <DropdownMenu.LinkItem icon={NotePencilIcon} href={`/edit/${f.id}`}>编辑与历史版本</DropdownMenu.LinkItem>}
         <DropdownMenu.Item icon={PencilSimpleIcon} onClick={() => askRename(f)}>重命名</DropdownMenu.Item>
@@ -274,8 +277,8 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
                     {u.file && (
                       <div className="flex shrink-0 items-center gap-1">
                         <span className="hidden text-kumo-success sm:inline-flex"><CheckCircleIcon size={16} weight="fill" /></span>
-                        <Tooltip content="复制 raw 链接" asChild>
-                          <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label="复制 raw 链接" onClick={() => copyLink(u.file!)} />
+                        <Tooltip content={`复制${rawLabel(u.file!)}`} asChild>
+                          <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label={`复制${rawLabel(u.file!)}`} onClick={() => copyLink(u.file!)} />
                         </Tooltip>
                       </div>
                     )}
@@ -375,8 +378,8 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
                         </Table.Cell>
                         <Table.Cell>
                           <div className="flex items-center justify-end gap-1">
-                            <Tooltip content="复制 raw 链接" asChild>
-                              <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label="复制 raw 链接" onClick={() => copyLink(f)} />
+                            <Tooltip content={`复制${rawLabel(f)}`} asChild>
+                              <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label={`复制${rawLabel(f)}`} onClick={() => copyLink(f)} />
                             </Tooltip>
                             {actions(f)}
                           </div>
