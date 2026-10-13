@@ -84,3 +84,8 @@ pnpm deploy | pnpm deploy:inline      # 部署（需 Rei 同意）
 - **每轮对话完成后 commit 并 push**（main 分支，中文提交信息）。提交前 `pnpm typecheck && pnpm test`。
 - 改上传限制 / 白名单 → 同步 `docs/PRODUCT.md` 与 README。
 - 重要决定记到 `.agents/memory/decisions.md`。
+
+
+## 错误提示约定
+
+界面里出现 HTTP 状态码时一律带中文注释，如「请求失败（408 请求超时：上传途中网络或代理卡住）」。对照表在 `web/src/api.ts` 的 `STATUS_TEXT`，新增状态码时补进去。

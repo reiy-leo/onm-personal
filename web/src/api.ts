@@ -8,6 +8,26 @@ export class ApiError extends Error {
   }
 }
 
+/** 常见 HTTP 状态码的中文注释：错误提示里统一写成「408 请求超时」这种形式。 */
+const STATUS_TEXT: Record<number, string> = {
+  400: "请求有误",
+  401: "未登录",
+  403: "无权限",
+  404: "不存在",
+  405: "不支持该方法",
+  408: "请求超时：上传途中网络或代理卡住",
+  409: "版本冲突",
+  413: "文件太大",
+  415: "不支持的文件类型",
+  429: "请求太频繁",
+  500: "服务器内部错误",
+  502: "网关错误",
+  503: "服务暂不可用",
+  504: "网关超时",
+  524: "源站响应超时",
+};
+export const statusLabel = (code: number) => (STATUS_TEXT[code] ? `${code} ${STATUS_TEXT[code]}` : String(code));
+
 /** 会话失效（401）时广播，AuthProvider 收到后弹出登录框。 */
 export const UNAUTHORIZED_EVENT = "onm:unauthorized";
 
@@ -22,7 +42,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
     throw new ApiError("需要登录", 401);
   }
-  if (!res.ok) throw new ApiError(data.error ?? `请求失败（${res.status}）`, res.status);
+  if (!res.ok) throw new ApiError(data.error ?? `请求失败（${statusLabel(res.status)}）`, res.status);
   return data as T;
 }
 
@@ -51,7 +71,7 @@ export const api = {
         if (!retryable) throw e;
         if (attempt >= 2) {
           const status = e instanceof ApiError ? e.status : 0;
-          throw new ApiError(status === 408 ? "上传超时（408）：上传途中网络或代理卡住了，已自动重试 2 次" : `上传失败${status ? `（${status}）` : "：网络中断"}，已自动重试 2 次`, status);
+          throw new ApiError(`上传失败${status ? `（${statusLabel(status)}）` : "（网络中断）"}，已自动重试 2 次`, status);
         }
         await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
       }
