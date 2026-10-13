@@ -17,7 +17,7 @@ Cloudflare Worker（TypeScript）+ R2（图片）+ D1（元数据与文本版本
 
 | 项 | 默认 |
 | --- | --- |
-| 图片单文件 | 20 MB（`MAX_IMAGE_MB`） |
+| 图片单文件 | 5 MB（`MAX_IMAGE_MB`） |
 | 文本单文件 | 1024 KB，UTF-8（`MAX_TEXT_KB`） |
 | 图片类型 | png jpg jpeg gif webp avif svg ico bmp |
 | 文本类型 | txt md json yaml toml ini csv log xml html css js ts py sh sql go rs … 共 32 种（`src/shared/limits.ts`） |

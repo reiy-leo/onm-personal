@@ -159,6 +159,10 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     setLinksFile(f);
     setLinksOpen(true);
   };
+  const copyRaw = async (f: FileView) => {
+    await copyText(f.urls.raw);
+    toast.add({ title: "已复制 raw 链接", description: f.urls.raw, variant: "success" });
+  };
   const copyLink = async (f: FileView) => {
     await copyText(f.urls.view);
     toast.add({ title: "已复制", description: f.urls.view, variant: "success" });
@@ -227,6 +231,7 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
       <DropdownMenu.Trigger render={<Button variant="ghost" size="sm" shape="square" icon={DotsThreeIcon} aria-label={`${f.name} 的操作`} />} />
       <DropdownMenu.Content align="end">
         <DropdownMenu.Item icon={CopyIcon} onClick={() => copyLink(f)}>复制{f.kind === "image" ? "直链" : "链接"}</DropdownMenu.Item>
+        {f.kind === "text" && <DropdownMenu.Item icon={CopyIcon} onClick={() => copyRaw(f)}>复制 raw 链接</DropdownMenu.Item>}
         <DropdownMenu.Item icon={LinkSimpleIcon} onClick={() => openLinks(f)}>更多链接格式</DropdownMenu.Item>
         <DropdownMenu.LinkItem icon={ArrowSquareOutIcon} href={f.urls.view} target="_blank">打开</DropdownMenu.LinkItem>
         {f.kind === "text" && <DropdownMenu.LinkItem icon={NotePencilIcon} href={`/edit/${f.id}`}>编辑与历史版本</DropdownMenu.LinkItem>}

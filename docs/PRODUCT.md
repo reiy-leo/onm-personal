@@ -26,7 +26,7 @@ Rei 的个人图床（类似 sm.ms）+ 带版本历史的纯文本库，域名 *
 
 | 项 | 默认 | 在哪改 |
 | --- | --- | --- |
-| 图片单文件 | **20 MB** | `wrangler.jsonc` → `vars.MAX_IMAGE_MB`（硬上限 95，受 Worker 请求体 100MB 限制） |
+| 图片单文件 | **5 MB** | `wrangler.jsonc` → `vars.MAX_IMAGE_MB`（硬上限 95，受 Worker 请求体 100MB 限制） |
 | 文本单文件 | **1024 KB**，必须 UTF-8 | `vars.MAX_TEXT_KB`（硬上限 1800，受 D1 单行 2MB 限制） |
 | 图片类型 | png jpg jpeg gif webp avif svg ico bmp | `src/shared/limits.ts` → `IMAGE_TYPES` |
 | 文本类型 | txt md markdown json jsonc yaml yml toml ini conf csv tsv log xml html css js mjs ts tsx jsx py sh sql go rs java c h cpp srt vtt | `src/shared/limits.ts` → `TEXT_TYPES` |

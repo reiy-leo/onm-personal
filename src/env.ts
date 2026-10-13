@@ -18,7 +18,7 @@ export interface Env {
   // vars
   /** 允许上传/编辑/删除的 Google 邮箱，逗号分隔。 */
   ADMIN_EMAILS?: string;
-  /** 图片单文件上限（MB），默认 20。 */
+  /** 图片单文件上限（MB），默认 5。 */
   MAX_IMAGE_MB?: string;
   /** 文本单文件上限（KB），默认 1024。 */
   MAX_TEXT_KB?: string;

@@ -32,7 +32,7 @@
     // 只有这些 Google 账号能上传 / 编辑 / 删除（逗号分隔）
     "ADMIN_EMAILS": "reiy.leoz@gmail.com",
     // 单文件上限
-    "MAX_IMAGE_MB": "20",
+    "MAX_IMAGE_MB": "5",
     "MAX_TEXT_KB": "1024"
   }
   // Secrets（不要提交；wrangler secret put … 或在 CF 控制台添加）：

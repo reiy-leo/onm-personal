@@ -50,7 +50,7 @@ export const TEXT_TYPES: Record<string, string> = {
 };
 
 /** 默认上限（可用 wrangler vars MAX_IMAGE_MB / MAX_TEXT_KB 覆盖）。 */
-export const DEFAULT_MAX_IMAGE_MB = 20;
+export const DEFAULT_MAX_IMAGE_MB = 5;
 export const DEFAULT_MAX_TEXT_KB = 1024;
 /** 每个文本最多保留的版本数没有上限；单次列表最多返回的版本数。 */
 export const MAX_NAME_LENGTH = 200;

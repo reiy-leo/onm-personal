@@ -1,4 +1,4 @@
-// 「复制链接」弹窗：图片给直链 / Markdown / HTML / BBCode，文本给只读页 / 原文。
+// 「复制链接」弹窗：图片给 raw 直链 / Markdown / HTML / BBCode，文本给只读页 / raw 原文。
 import { Button, ClipboardText, Dialog, Text } from "@cloudflare/kumo";
 import type { FileView } from "../../../src/shared/types.ts";
 
@@ -6,7 +6,7 @@ export function linkFormats(f: FileView): { label: string; value: string }[] {
   if (f.kind === "image") {
     const alt = f.name.replace(/\.[^.]+$/, "").replace(/[[\]]/g, "");
     return [
-      { label: "直链", value: f.urls.view },
+      { label: "raw 直链（原图）", value: f.urls.raw },
       { label: "Markdown", value: `![${alt}](${f.urls.view})` },
       { label: "HTML", value: `<img src="${f.urls.view}" alt="${alt.replace(/"/g, "&quot;")}" />` },
       { label: "BBCode", value: `[img]${f.urls.view}[/img]` },
@@ -14,8 +14,8 @@ export function linkFormats(f: FileView): { label: string; value: string }[] {
   }
   return [
     { label: "只读页", value: f.urls.view },
-    { label: "原文（raw，始终最新）", value: f.urls.raw },
-    ...(f.version ? [{ label: `原文（固定 v${f.version}）`, value: `${f.urls.raw}?v=${f.version}` }] : []),
+    { label: "raw 原文（始终最新）", value: f.urls.raw },
+    ...(f.version ? [{ label: `raw 原文（固定 v${f.version}）`, value: `${f.urls.raw}?v=${f.version}` }] : []),
   ];
 }
 
