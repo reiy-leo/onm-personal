@@ -25,7 +25,6 @@ import {
   FileTextIcon,
   FolderOpenIcon,
   GoogleLogoIcon,
-  LinkSimpleIcon,
   MagnifyingGlassIcon,
   NotePencilIcon,
   PencilSimpleIcon,
@@ -38,7 +37,6 @@ import type { FileView, Limits, LoginError } from "../../../src/shared/types.ts"
 import { api } from "../api.ts";
 import { useAuth } from "../components/Auth.tsx";
 import { AppHeader } from "../components/AppHeader.tsx";
-import { LinksDialog } from "../components/LinksDialog.tsx";
 import { UploadZone } from "../components/UploadZone.tsx";
 import { fmtAgo, fmtBytes, fmtTime } from "../format.ts";
 
@@ -95,8 +93,6 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // ---- 弹窗（始终挂载，用 open 控制）----
-  const [linksFile, setLinksFile] = useState<FileView | null>(null);
-  const [linksOpen, setLinksOpen] = useState(false);
   const [renaming, setRenaming] = useState<FileView | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -145,8 +141,8 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
         setUploads((prev) => prev.map((u) => (u.key === key ? { ...u, status: "done", file } : u)));
         upsert(file);
         if (list.length === 1) {
-          await copyText(file.urls.view);
-          toast.add({ title: "上传成功，链接已复制", description: file.urls.view, variant: "success" });
+          await copyText(file.urls.raw);
+          toast.add({ title: "上传成功，raw 链接已复制", description: file.urls.raw, variant: "success" });
         }
       } catch (e) {
         setUploads((prev) => prev.map((u) => (u.key === key ? { ...u, status: "error", error: e instanceof Error ? e.message : String(e) } : u)));
@@ -155,17 +151,10 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const openLinks = (f: FileView) => {
-    setLinksFile(f);
-    setLinksOpen(true);
-  };
-  const copyRaw = async (f: FileView) => {
+  /** 复制按钮统一复制 raw 链接：图片是原图直链，文本是最新版原文。 */
+  const copyLink = async (f: FileView) => {
     await copyText(f.urls.raw);
     toast.add({ title: "已复制 raw 链接", description: f.urls.raw, variant: "success" });
-  };
-  const copyLink = async (f: FileView) => {
-    await copyText(f.urls.view);
-    toast.add({ title: "已复制", description: f.urls.view, variant: "success" });
   };
   const openNew = () => {
     if (!requireLogin("新建文本需要先登录。")) return;
@@ -230,9 +219,7 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     <DropdownMenu>
       <DropdownMenu.Trigger render={<Button variant="ghost" size="sm" shape="square" icon={DotsThreeIcon} aria-label={`${f.name} 的操作`} />} />
       <DropdownMenu.Content align="end">
-        <DropdownMenu.Item icon={CopyIcon} onClick={() => copyLink(f)}>复制{f.kind === "image" ? "直链" : "链接"}</DropdownMenu.Item>
-        {f.kind === "text" && <DropdownMenu.Item icon={CopyIcon} onClick={() => copyRaw(f)}>复制 raw 链接</DropdownMenu.Item>}
-        <DropdownMenu.Item icon={LinkSimpleIcon} onClick={() => openLinks(f)}>更多链接格式</DropdownMenu.Item>
+        <DropdownMenu.Item icon={CopyIcon} onClick={() => copyLink(f)}>复制 raw 链接</DropdownMenu.Item>
         <DropdownMenu.LinkItem icon={ArrowSquareOutIcon} href={f.urls.view} target="_blank">打开</DropdownMenu.LinkItem>
         {f.kind === "text" && <DropdownMenu.LinkItem icon={NotePencilIcon} href={`/edit/${f.id}`}>编辑与历史版本</DropdownMenu.LinkItem>}
         <DropdownMenu.Item icon={PencilSimpleIcon} onClick={() => askRename(f)}>重命名</DropdownMenu.Item>
@@ -282,15 +269,14 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
                       <Text truncate bold>{u.file?.name ?? u.name}</Text>
                       {u.status === "uploading" && <Text variant="secondary" size="sm">上传中…</Text>}
                       {u.status === "error" && <Text variant="error" size="sm">{u.error}</Text>}
-                      {u.file && <Text variant="mono-secondary" truncate>{u.file.urls.view}</Text>}
+                      {u.file && <Text variant="mono-secondary" truncate>{u.file.urls.raw}</Text>}
                     </div>
                     {u.file && (
                       <div className="flex shrink-0 items-center gap-1">
                         <span className="hidden text-kumo-success sm:inline-flex"><CheckCircleIcon size={16} weight="fill" /></span>
-                        <Tooltip content="复制链接" asChild>
-                          <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label="复制链接" onClick={() => copyLink(u.file!)} />
+                        <Tooltip content="复制 raw 链接" asChild>
+                          <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label="复制 raw 链接" onClick={() => copyLink(u.file!)} />
                         </Tooltip>
-                        <Button variant="secondary" size="sm" onClick={() => openLinks(u.file!)}>格式</Button>
                       </div>
                     )}
                   </li>
@@ -373,7 +359,7 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
                           <div className="flex items-center gap-3">
                             <Thumb f={f} />
                             <div className="grid min-w-0 gap-0.5">
-                              <a href={f.kind === "text" ? `/edit/${f.id}` : f.urls.view} target={f.kind === "text" ? undefined : "_blank"} rel="noopener" className="truncate text-kumo-default hover:underline">
+                              <a href={f.urls.view} target="_blank" rel="noopener" className="truncate text-kumo-default hover:underline">
                                 {f.name}
                               </a>
                               <Text variant="mono-secondary">{f.id}</Text>
@@ -389,8 +375,8 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
                         </Table.Cell>
                         <Table.Cell>
                           <div className="flex items-center justify-end gap-1">
-                            <Tooltip content={f.kind === "image" ? "复制直链" : "复制链接"} asChild>
-                              <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label="复制链接" onClick={() => copyLink(f)} />
+                            <Tooltip content="复制 raw 链接" asChild>
+                              <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label="复制 raw 链接" onClick={() => copyLink(f)} />
                             </Tooltip>
                             {actions(f)}
                           </div>
@@ -410,7 +396,6 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
         </section>
       </main>
 
-      <LinksDialog file={linksFile} open={linksOpen} onOpenChange={setLinksOpen} />
 
       <Dialog.Root open={newOpen} onOpenChange={setNewOpen}>
         <Dialog size="lg" className="px-6 py-5">

@@ -37,7 +37,7 @@ src/                     Worker
 web/                     前端（React + Kumo）
   src/App.tsx            按 PageData.kind 渲染；编辑器懒加载
   src/pages/             HomePage（上传 + 文件管理）、EditorPage（编辑 + 历史）、TextViewPage（公开只读）、NotFoundPage
-  src/components/        Auth（登录弹窗）、AppHeader、UploadZone、LinksDialog
+  src/components/        Auth（登录弹窗）、AppHeader、UploadZone
 migrations/              D1 迁移（只增不改）
 worker-inline/           内联静态资源的部署入口（API Token 部署用）
 scripts/                 kumo-lint.mjs（设计规则检查）、build-inline-assets.mjs
