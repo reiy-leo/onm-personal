@@ -38,10 +38,24 @@ export const api = {
     if (p.cursor) s.set("cursor", p.cursor);
     return request<ListResponse>(`/api/files?${s}`);
   },
-  upload: (file: File) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    return request<{ file: FileView }>("/api/upload", { method: "POST", body: fd });
+  /** 上传：遇到超时/网关错误/网络中断自动重试 2 次（408 多是上传途中网络或代理卡住）。 */
+  upload: async (file: File) => {
+    const RETRYABLE = new Set([408, 502, 503, 504, 524]);
+    for (let attempt = 0; ; attempt++) {
+      const fd = new FormData();
+      fd.append("file", file);
+      try {
+        return await request<{ file: FileView }>("/api/upload", { method: "POST", body: fd });
+      } catch (e) {
+        const retryable = e instanceof ApiError ? RETRYABLE.has(e.status) : e instanceof TypeError;
+        if (!retryable) throw e;
+        if (attempt >= 2) {
+          const status = e instanceof ApiError ? e.status : 0;
+          throw new ApiError(status === 408 ? "上传超时（408）：上传途中网络或代理卡住了，已自动重试 2 次" : `上传失败${status ? `（${status}）` : "：网络中断"}，已自动重试 2 次`, status);
+        }
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
   },
   rename: (id: string, name: string) => request<{ file: FileView }>(`/api/files/${id}`, { method: "PATCH", body: json({ name }) }),
   remove: (id: string) => request<{ ok: true }>(`/api/files/${id}`, { method: "DELETE" }),

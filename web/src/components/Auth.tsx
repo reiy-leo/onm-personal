@@ -60,7 +60,7 @@ export function AuthProvider({ user: initial, children }: { user: SessionInfo | 
                 <LockKeyIcon size={18} />
               </span>
               <div className="grid gap-1">
-                <Dialog.Title className="text-base font-semibold">{expired ? "登录已过期" : "需要登录"}</Dialog.Title>
+                <Dialog.Title className="text-base font-semibold">{expired ? "登录已过期" : "登录原料在线"}</Dialog.Title>
                 <Dialog.Description className="text-kumo-subtle">
                   {expired ? "请重新登录后再继续操作。" : (reason ?? "上传、编辑和删除只对站长开放。")}
                 </Dialog.Description>

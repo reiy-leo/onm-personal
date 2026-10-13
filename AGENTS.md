@@ -1,10 +1,12 @@
-# AGENTS.md — onm-personal
+# AGENTS.md — Material Online（原料在线）
 
 > 给 AI 编程助手的项目说明。`CLAUDE.md` 指向本文件。更多资料在 `.agents/`（rules / prompts / memory / skills）。
 
 ## 目标
 
 Rei 的个人图床（类似 sm.ms）+ 带版本历史的纯文本库，部署在 **https://m.rei8t.dev**。
+
+**显示名**：中文「原料在线」，英文「Material Online」，任何地方都不加后缀。`<title>` 只用中文名（`src/html.ts` 的 `SITE_TITLE`，所有页面一致）；页头中文名 + 英文名小号副标题；og:title / og:site_name 用英文名。仓库名、Worker 名 `onm-personal` 与域名不变。
 图片上传后得到公开直链；纯文本可在线编辑，每次保存按时间戳生成新版本，可查看、回滚历史版本。
 完整产品说明、限制与白名单见 [`docs/PRODUCT.md`](docs/PRODUCT.md)。
 

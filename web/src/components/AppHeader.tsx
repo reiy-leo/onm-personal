@@ -1,4 +1,4 @@
-// 吸顶顶栏：左侧站点名，右侧自定义操作 + 账号菜单 / 登录按钮。
+// 吸顶顶栏：左侧站点名（中文名 + 英文名小号副标题），右侧自定义操作 + 账号菜单 / 登录按钮。
 import type { ReactNode } from "react";
 import { Button, DropdownMenu, Text } from "@cloudflare/kumo";
 import { CaretDownIcon, GoogleLogoIcon, ImageSquareIcon, SignOutIcon } from "@phosphor-icons/react";
@@ -13,9 +13,9 @@ export function AppHeader({ children, wide = false }: { children?: ReactNode; wi
           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-kumo-brand text-white">
             <ImageSquareIcon size={16} weight="bold" />
           </span>
-          <Text variant="heading" as="span">onm</Text>
+          <Text variant="heading" as="span">原料在线</Text>
           <span className="hidden sm:inline">
-            <Text variant="secondary" as="span">图床 · 文本</Text>
+            <Text variant="secondary" size="sm" as="span">Material Online</Text>
           </span>
         </a>
         <div className="flex min-w-0 items-center gap-2">

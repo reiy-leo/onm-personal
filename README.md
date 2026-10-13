@@ -1,4 +1,6 @@
-# onm-personal
+# Material Online（原料在线）
+
+> 仓库 / Worker 名：`onm-personal`
 
 Rei 的个人图床 + 带版本历史的纯文本库，跑在单个 Cloudflare Worker 上，域名 **m.rei8t.dev**。
 

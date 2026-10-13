@@ -216,16 +216,16 @@ export default {
       return renderPage(env, req, { kind: "home", user, loginError: !user && LOGIN_ERRORS.has(err ?? "") ? (err as LoginError) : null, limits: limitsOf(env) });
     }
     if ((r = /^\/edit\/([A-Za-z0-9]{8})$/.exec(path))) {
-      return renderPage(env, req, { kind: "edit", user, id: r[1]!, limits: limitsOf(env) }, 200, "编辑 · onm");
+      return renderPage(env, req, { kind: "edit", user, id: r[1]!, limits: limitsOf(env) });
     }
     if ((r = /^\/t\/([A-Za-z0-9]{8})$/.exec(path)) && ID_RE.test(r[1]!)) {
       const row = await getFile(env, r[1]!);
       const want = parseV(url);
       const shown = row?.kind === "text" && want !== -1 ? await getVersion(env, row.id, want) : null;
       if (row && shown) {
-        return renderPage(env, req, { kind: "text", user, file: toView(origin, row), shown, latest: row.current_version ?? shown.version }, 200, `${row.name} · onm`);
+        return renderPage(env, req, { kind: "text", user, file: toView(origin, row), shown, latest: row.current_version ?? shown.version });
       }
     }
-    return renderPage(env, req, { kind: "notfound", user }, 404, "不存在 · onm");
+    return renderPage(env, req, { kind: "notfound", user }, 404);
   },
 } satisfies ExportedHandler<Env>;

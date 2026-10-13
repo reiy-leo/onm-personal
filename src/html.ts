@@ -3,6 +3,9 @@
 import type { Env } from "./env.ts";
 import type { PageData } from "./shared/types.ts";
 
+/** 站点显示名：<title> 只用中文名，不加任何后缀；og 用英文名（见 web/index.html）。 */
+export const SITE_TITLE = "原料在线";
+
 export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
@@ -21,7 +24,7 @@ function fallback(data: PageData): string {
 }
 
 /** 读 public/index.html，把页面数据塞进 <script id="page-data">。 */
-export async function renderPage(env: Env, req: Request, data: PageData, status = 200, title = "onm"): Promise<Response> {
+export async function renderPage(env: Env, req: Request, data: PageData, status = 200, title = SITE_TITLE): Promise<Response> {
   const headers = { "Content-Type": "text/html; charset=utf-8", ...SECURITY_HEADERS };
   const shell = env.ASSETS ? await env.ASSETS.fetch(new URL("/index.html", req.url)).catch(() => null) : null;
   if (!shell || !shell.ok) {
