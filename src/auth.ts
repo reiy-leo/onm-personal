@@ -38,8 +38,12 @@ export async function getAdmin(req: Request, env: Env): Promise<SessionUser | nu
   return user && adminEmails(env).includes(user.email) ? user : null;
 }
 
-function safeReturnTo(v: string | null | undefined): string {
-  return v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\") ? v : "/";
+export function safeReturnTo(v: string | null | undefined): string {
+  if (!v || !v.startsWith("/") || v.startsWith("//") || v.startsWith("/\\")) return "/";
+  // 登录成功后不要再带着上一次的 login_error 回去
+  const u = new URL(v, "https://x.invalid");
+  u.searchParams.delete("login_error");
+  return u.pathname + u.search + u.hash;
 }
 
 const backHome = (req: Request, error: LoginError) => {

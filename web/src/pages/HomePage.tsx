@@ -72,6 +72,16 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
   const { user, requireLogin } = useAuth();
   const toast = useKumoToastManager();
 
+  // ---- 登录错误：只显示一次。进页面就把 ?login_error 从地址栏抹掉（刷新/登录回跳都不会再带上），
+  //      点关闭后不再显示；已登录时不显示。----
+  const [shownError, setShownError] = useState<LoginError | null>(loginError);
+  useEffect(() => {
+    const url = new URL(location.href);
+    if (!url.searchParams.has("login_error")) return;
+    url.searchParams.delete("login_error");
+    history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+  }, []);
+
   // ---- 上传 ----
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const seq = useRef(0);
@@ -236,7 +246,15 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
       </AppHeader>
 
       <main className="mx-auto grid max-w-6xl gap-6 px-5 py-6">
-        {loginError && <Banner variant="error" icon={<WarningCircleIcon weight="fill" />} title="登录失败" description={LOGIN_ERRORS[loginError]} />}
+        {shownError && !user && (
+          <Banner
+            variant="error"
+            icon={<WarningCircleIcon weight="fill" />}
+            title="登录失败"
+            description={LOGIN_ERRORS[shownError]}
+            action={<Button variant="ghost" shape="square" size="sm" icon={XIcon} aria-label="关闭" onClick={() => setShownError(null)} />}
+          />
+        )}
 
         <UploadZone limits={limits} onFiles={onFiles} />
 

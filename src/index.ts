@@ -213,7 +213,7 @@ export default {
     const user = sessionInfo(await getAdmin(req, env));
     if (path === "/") {
       const err = url.searchParams.get("login_error");
-      return renderPage(env, req, { kind: "home", user, loginError: LOGIN_ERRORS.has(err ?? "") ? (err as LoginError) : null, limits: limitsOf(env) });
+      return renderPage(env, req, { kind: "home", user, loginError: !user && LOGIN_ERRORS.has(err ?? "") ? (err as LoginError) : null, limits: limitsOf(env) });
     }
     if ((r = /^\/edit\/([A-Za-z0-9]{8})$/.exec(path))) {
       return renderPage(env, req, { kind: "edit", user, id: r[1]!, limits: limitsOf(env) }, 200, "编辑 · onm");

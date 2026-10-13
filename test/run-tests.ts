@@ -174,6 +174,14 @@ assert.equal((sqlite.prepare("SELECT COUNT(*) AS n FROM text_versions WHERE file
 page = await pageOf(await call(guest, "/?login_error=forbidden"));
 assert.equal(page.kind, "home");
 assert.equal(page.loginError, "forbidden");
+page = await pageOf(await call(admin, "/?login_error=forbidden"));
+assert.equal(page.loginError, null, "已登录时不显示登录错误");
+{
+  const { safeReturnTo } = await import("../src/auth.ts");
+  assert.equal(safeReturnTo("/?login_error=forbidden"), "/", "回跳地址去掉 login_error");
+  assert.equal(safeReturnTo("/edit/abc?x=1&login_error=state#h"), "/edit/abc?x=1#h");
+  assert.equal(safeReturnTo("//evil.com"), "/");
+}
 page = await pageOf(await call(admin, `/edit/${md.id}`));
 assert.equal(page.kind, "edit");
 assert.equal(page.user.email, "dev@localhost");
