@@ -203,6 +203,8 @@ export default {
     if (path.startsWith("/api/")) return handleApi(req, env, path, origin);
     if (path === "/health") return json({ ok: true });
     if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /\n", { headers: { "Content-Type": "text/plain" } });
+    // 浏览器默认请求 /favicon.ico：转给 /assets/favicon.ico
+    if (path === "/favicon.ico" && env.ASSETS) return env.ASSETS.fetch(new URL("/assets/favicon.ico", req.url));
     // 前端静态资源（正常情况下由 Static Assets 直接响应，不会走到这里）
     if (path.startsWith("/assets/") && env.ASSETS) return env.ASSETS.fetch(req);
     if (!readMethod) return new Response("Method Not Allowed", { status: 405 });
