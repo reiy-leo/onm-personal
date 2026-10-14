@@ -1,7 +1,7 @@
 // 吸顶顶栏：左侧站点名（中文名 + 英文名小号副标题），右侧自定义操作 + 账号菜单 / 登录按钮。
 import type { ReactNode } from "react";
 import { Button, DropdownMenu, Text } from "@cloudflare/kumo";
-import { CaretDownIcon, GoogleLogoIcon, ImageSquareIcon, SignOutIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, GoogleLogoIcon, SignOutIcon } from "@phosphor-icons/react";
 import { useAuth } from "./Auth.tsx";
 
 export function AppHeader({ children, wide = false }: { children?: ReactNode; wide?: boolean }) {
@@ -10,9 +10,7 @@ export function AppHeader({ children, wide = false }: { children?: ReactNode; wi
     <header className="sticky top-0 z-10 border-b border-kumo-line bg-kumo-base">
       <div className={`mx-auto flex h-14 items-center justify-between gap-3 px-5 ${wide ? "max-w-none" : "max-w-6xl"}`}>
         <a href="/" className="flex min-w-0 items-center gap-2">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-kumo-brand text-white">
-            <ImageSquareIcon size={16} weight="bold" />
-          </span>
+          <img src="/assets/icon-192.png" alt="" width={28} height={28} className="size-7 shrink-0" />
           <Text variant="heading" as="span">原料在线</Text>
           <span className="hidden sm:inline">
             <Text variant="secondary" size="sm" as="span">Material Online</Text>
