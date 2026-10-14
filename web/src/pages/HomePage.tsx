@@ -132,31 +132,40 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
 
   const upsert = (f: FileView) => setFiles((prev) => (prev ? [f, ...prev.filter((x) => x.id !== f.id)] : prev));
 
-  // 上传进度显示在上传区底部：完成变绿、失败变红，稍等后消失；成功的文件直接出现在列表顶部。
+  // 上传/新建进度显示在上传区底部：完成变绿、失败变红，稍等后消失；成功的文件直接出现在列表顶部。
+  const patch = (key: string, p: Partial<UploadProgress>) => setProgress((prev) => prev.map((x) => (x.key === key ? { ...x, ...p } : x)));
+  const dismiss = (key: string, ms: number) => setTimeout(() => setProgress((prev) => prev.filter((x) => x.key !== key)), ms);
+  const track = (name: string): string => {
+    const key = `u${++seq.current}`;
+    setProgress((prev) => [...prev, { key, name, ratio: 0, status: "uploading" }]);
+    return key;
+  };
+  /** 跑一个上传/新建任务并驱动它的进度条；返回是否成功。single=true 时成功后自动复制 raw 链接 */
+  const runTracked = async (key: string, name: string, job: (onProgress: (r: number) => void) => Promise<{ file: FileView }>, single: boolean, failTitle = "上传失败") => {
+    try {
+      const { file } = await job((ratio) => patch(key, { ratio }));
+      patch(key, { ratio: 1, status: "done" });
+      dismiss(key, 1500);
+      upsert(file);
+      if (single) {
+        await copyText(file.urls.raw);
+        toast.add({ title: `${failTitle === "上传失败" ? "上传成功" : "已创建"}，${rawLabel(file)}已复制`, description: file.urls.raw, variant: "success" });
+      }
+      return true;
+    } catch (e) {
+      patch(key, { ratio: 1, status: "error" });
+      dismiss(key, 4000);
+      toast.add({ title: `${failTitle}：${name}`, description: e instanceof Error ? e.message : String(e), variant: "error" });
+      return false;
+    }
+  };
+
   const onFiles = useCallback(async (list: File[]) => {
-    const items: UploadProgress[] = list.map((f) => ({ key: `u${++seq.current}`, name: f.name, ratio: 0, status: "uploading" }));
-    setProgress((prev) => [...prev, ...items]);
-    const patch = (key: string, p: Partial<UploadProgress>) => setProgress((prev) => prev.map((x) => (x.key === key ? { ...x, ...p } : x)));
-    const dismiss = (key: string, ms: number) => setTimeout(() => setProgress((prev) => prev.filter((x) => x.key !== key)), ms);
+    const keys = list.map((f) => track(f.name));
     let ok = 0;
     for (let i = 0; i < list.length; i++) {
       const f = list[i]!;
-      const key = items[i]!.key;
-      try {
-        const { file } = await api.upload(f, (ratio) => patch(key, { ratio }));
-        ok++;
-        patch(key, { ratio: 1, status: "done" });
-        dismiss(key, 1500);
-        upsert(file);
-        if (list.length === 1) {
-          await copyText(file.urls.raw);
-          toast.add({ title: `上传成功，${rawLabel(file)}已复制`, description: file.urls.raw, variant: "success" });
-        }
-      } catch (e) {
-        patch(key, { ratio: 1, status: "error" });
-        dismiss(key, 4000);
-        toast.add({ title: `上传失败：${f.name}`, description: e instanceof Error ? e.message : String(e), variant: "error" });
-      }
+      if (await runTracked(keys[i]!, f.name, (onP) => api.upload(f, onP), list.length === 1)) ok++;
     }
     if (list.length > 1 && ok > 0) toast.add({ title: `已上传 ${ok} 个文件`, variant: "success" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,15 +192,14 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     setDeleteOpen(true);
   };
 
-  async function createText() {
-    setBusy(true);
-    try {
-      const { file } = await api.createText(draftName.trim() || "untitled.txt", draftContent);
-      location.href = `/edit/${file.id}`;
-    } catch (e) {
-      toast.add({ title: "新建失败", description: e instanceof Error ? e.message : String(e), variant: "error" });
-      setBusy(false);
-    }
+  /** 新建文本：关掉弹窗留在首页，进度条显示在上传区底部，不跳转编辑器 */
+  function createText() {
+    const name = draftName.trim() || "untitled.txt";
+    const content = draftContent;
+    setNewOpen(false);
+    const key = track(name);
+    patch(key, { ratio: 0.3 });
+    void runTracked(key, name, () => api.createText(name, content), true, "新建失败");
   }
 
   async function confirmRename() {
@@ -371,18 +379,18 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
             className="grid gap-5"
             onSubmit={(e) => {
               e.preventDefault();
-              void createText();
+              createText();
             }}
           >
             <div className="grid gap-1">
               <Dialog.Title className="text-base font-semibold">新建文本</Dialog.Title>
-              <Dialog.Description className="text-kumo-subtle">创建后进入编辑器，每次保存都会生成一个带时间戳的版本。</Dialog.Description>
+              <Dialog.Description className="text-kumo-subtle">创建后留在首页，可在文件列表里打开编辑；每次保存都会生成一个带时间戳的版本。</Dialog.Description>
             </div>
             <Input label="文件名" placeholder="notes.md（不写扩展名默认 .txt）" value={draftName} onChange={(e) => setDraftName(e.target.value)} autoFocus />
             <InputArea label="初始内容（可留空）" value={draftContent} onValueChange={setDraftContent} rows={6} className="font-mono" />
             <div className="flex justify-end gap-2">
               <Dialog.Close render={(p) => <Button {...p} variant="secondary">取消</Button>} />
-              <Button type="submit" variant="primary" loading={busy}>创建并编辑</Button>
+              <Button type="submit" variant="primary">创建</Button>
             </div>
           </form>
         </Dialog>
