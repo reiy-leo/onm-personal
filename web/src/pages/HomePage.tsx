@@ -1,5 +1,5 @@
-// 首页：上传区 + 本次上传结果 + 文件管理（列表 / 筛选 / 搜索 / 改名 / 删除）。
-import { useCallback, useEffect, useRef, useState } from "react";
+// 首页：上传区 + 文件管理（列表 / 筛选 / 搜索 / 改名 / 删除）。
+import { useCallback, useEffect, useState } from "react";
 import {
   Badge,
   Banner,
@@ -19,7 +19,6 @@ import {
 } from "@cloudflare/kumo";
 import {
   ArrowSquareOutIcon,
-  CheckCircleIcon,
   CopyIcon,
   DotsThreeIcon,
   FileTextIcon,
@@ -50,7 +49,6 @@ const LOGIN_ERRORS: Record<LoginError, string> = {
   forbidden: "这个 Google 账号没有管理权限。",
 };
 
-type UploadItem = { key: string; name: string; status: "uploading" | "done" | "error"; file?: FileView; error?: string };
 
 function Thumb({ f }: { f: FileView }) {
   return f.kind === "image" ? (
@@ -84,8 +82,7 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
   }, []);
 
   // ---- 上传 ----
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
-  const seq = useRef(0);
+  const [uploading, setUploading] = useState(0);
 
   // ---- 列表 ----
   const [kind, setKind] = useState("all");
@@ -134,23 +131,26 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
 
   const upsert = (f: FileView) => setFiles((prev) => (prev ? [f, ...prev.filter((x) => x.id !== f.id)] : prev));
 
+  // 上传进度和结果用 toast 提示，上传成功的文件直接出现在文件列表顶部。
   const onFiles = useCallback(async (list: File[]) => {
-    const items = list.map((f) => ({ key: `u${++seq.current}`, name: f.name, status: "uploading" as const }));
-    setUploads((prev) => [...items, ...prev].slice(0, 20));
-    for (let i = 0; i < list.length; i++) {
-      const key = items[i]!.key;
+    setUploading((n) => n + list.length);
+    let ok = 0;
+    for (const f of list) {
       try {
-        const { file } = await api.upload(list[i]!);
-        setUploads((prev) => prev.map((u) => (u.key === key ? { ...u, status: "done", file } : u)));
+        const { file } = await api.upload(f);
+        ok++;
         upsert(file);
         if (list.length === 1) {
           await copyText(file.urls.raw);
           toast.add({ title: `上传成功，${rawLabel(file)}已复制`, description: file.urls.raw, variant: "success" });
         }
       } catch (e) {
-        setUploads((prev) => prev.map((u) => (u.key === key ? { ...u, status: "error", error: e instanceof Error ? e.message : String(e) } : u)));
+        toast.add({ title: `上传失败：${f.name}`, description: e instanceof Error ? e.message : String(e), variant: "error" });
+      } finally {
+        setUploading((n) => n - 1);
       }
     }
+    if (list.length > 1 && ok > 0) toast.add({ title: `已上传 ${ok} 个文件`, variant: "success" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -192,7 +192,6 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     try {
       const { file } = await api.rename(renaming.id, newName);
       upsert(file);
-      setUploads((prev) => prev.map((u) => (u.file?.id === file.id ? { ...u, file } : u)));
       setRenameOpen(false);
       toast.add({ title: "已重命名", description: file.name, variant: "success" });
     } catch (e) {
@@ -208,7 +207,6 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
     try {
       await api.remove(deleting.id);
       setFiles((prev) => prev?.filter((f) => f.id !== deleting.id) ?? prev);
-      setUploads((prev) => prev.filter((u) => u.file?.id !== deleting.id));
       setDeleteOpen(false);
       toast.add({ title: `已删除 ${deleting.name}`, variant: "success" });
     } catch (e) {
@@ -253,47 +251,11 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
 
         <UploadZone limits={limits} onFiles={onFiles} />
 
-        {uploads.length > 0 && (
-          <section className="grid gap-3">
-            <div className="flex items-center justify-between">
-              <Text variant="heading" as="h2">本次上传</Text>
-              <Button variant="ghost" size="sm" onClick={() => setUploads([])}>清空</Button>
-            </div>
-            <LayerCard className="p-0">
-              <ul className="divide-y divide-kumo-line">
-                {uploads.map((u) => (
-                  <li key={u.key} className="flex items-center gap-3 px-4 py-3">
-                    {u.file ? <Thumb f={u.file} /> : (
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-kumo-recessed">
-                        {u.status === "uploading" ? <Loader size={16} /> : <span className="text-kumo-danger"><XIcon size={18} /></span>}
-                      </span>
-                    )}
-                    <div className="grid min-w-0 flex-1 gap-0.5">
-                      <Text truncate bold>{u.file?.name ?? u.name}</Text>
-                      {u.status === "uploading" && <Text variant="secondary" size="sm">上传中…</Text>}
-                      {u.status === "error" && <Text variant="error" size="sm">{u.error}</Text>}
-                      {u.file && <Text variant="mono-secondary" truncate>{u.file.urls.raw}</Text>}
-                    </div>
-                    {u.file && (
-                      <div className="flex shrink-0 items-center gap-1">
-                        <span className="hidden text-kumo-success sm:inline-flex"><CheckCircleIcon size={16} weight="fill" /></span>
-                        <Tooltip content={`复制${rawLabel(u.file!)}`} asChild>
-                          <Button variant="ghost" size="sm" shape="square" icon={CopyIcon} aria-label={`复制${rawLabel(u.file!)}`} onClick={() => copyLink(u.file!)} />
-                        </Tooltip>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </LayerCard>
-          </section>
-        )}
-
         <section className="grid gap-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="grid gap-1">
               <Text variant="heading" as="h2">文件</Text>
-              <Text variant="secondary">{user ? (files ? `已加载 ${files.length} 个${cursor ? "，还有更多" : ""}` : "加载中…") : "登录后可以管理全部文件。"}</Text>
+              <Text variant="secondary">{uploading > 0 ? `正在上传 ${uploading} 个文件…` : user ? (files ? `已加载 ${files.length} 个${cursor ? "，还有更多" : ""}` : "加载中…") : "登录后可以管理全部文件。"}</Text>
             </div>
             {user && (
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
