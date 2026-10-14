@@ -1,17 +1,31 @@
 // 上传区：点击选择 / 拖拽 / 粘贴（Ctrl+V 截图或文件）。未登录时任何上传动作都会先弹登录框。
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Text } from "@cloudflare/kumo";
+import { Meter, Text } from "@cloudflare/kumo";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
 import { ACCEPT_ATTR, IMAGE_TYPES, TEXT_TYPES, kindOf } from "../../../src/shared/limits.ts";
 import type { Limits } from "../../../src/shared/types.ts";
 import { fmtBytes } from "../format.ts";
 import { useAuth } from "./Auth.tsx";
 
+/** 一个正在上传（或刚结束）的文件，显示在上传区底部的进度条里 */
+export interface UploadProgress {
+  key: string;
+  name: string;
+  /** 0–1 */
+  ratio: number;
+  status: "uploading" | "done" | "error";
+}
+
 interface Props {
   limits: Limits;
+  progress: UploadProgress[];
   /** 交给上层逐个上传 */
   onFiles: (files: File[]) => void;
 }
+
+// Meter 的进度条是 from/via/to 渐变，换色要覆盖这三个
+const DONE_BAR = "from-kumo-success via-kumo-success to-kumo-success";
+const ERROR_BAR = "from-kumo-danger via-kumo-danger to-kumo-danger";
 
 const LOGIN_REASON = "上传图片或文本需要先登录。";
 
@@ -25,7 +39,7 @@ function named(f: File): File {
   return new File([f], `paste-${stamp}.${ext}`, { type: f.type });
 }
 
-export function UploadZone({ limits, onFiles }: Props) {
+export function UploadZone({ limits, progress, onFiles }: Props) {
   const { user, requireLogin } = useAuth();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -93,6 +107,20 @@ export function UploadZone({ limits, onFiles }: Props) {
       <Text variant="secondary" size="xs">
         支持 {Object.keys(IMAGE_TYPES).join(" ")} · {Object.keys(TEXT_TYPES).slice(0, 10).join(" ")} 等
       </Text>
+      {progress.length > 0 && (
+        // 进度条：上传中为品牌色，完成变绿，失败变红；结束后由上层稍等移除
+        <div className="grid w-full max-w-xl gap-2 text-left" onClick={(e) => e.stopPropagation()}>
+          {progress.map((p) => (
+            <Meter
+              key={p.key}
+              label={p.name}
+              value={Math.round(p.ratio * 100)}
+              customValue={p.status === "done" ? "完成" : p.status === "error" ? "失败" : `${Math.round(p.ratio * 100)}%`}
+              indicatorClassName={p.status === "done" ? DONE_BAR : p.status === "error" ? ERROR_BAR : undefined}
+            />
+          ))}
+        </div>
+      )}
     </div>
       <input
         ref={input}

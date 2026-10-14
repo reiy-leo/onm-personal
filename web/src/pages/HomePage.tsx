@@ -1,5 +1,5 @@
 // 首页：上传区 + 文件管理（列表 / 筛选 / 搜索 / 改名 / 删除）。
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Badge,
   Banner,
@@ -36,7 +36,7 @@ import type { FileView, Limits, LoginError } from "../../../src/shared/types.ts"
 import { api } from "../api.ts";
 import { useAuth } from "../components/Auth.tsx";
 import { AppHeader } from "../components/AppHeader.tsx";
-import { UploadZone } from "../components/UploadZone.tsx";
+import { UploadZone, type UploadProgress } from "../components/UploadZone.tsx";
 import { fmtAgo, fmtBytes, fmtTime } from "../format.ts";
 
 const LOGIN_ERRORS: Record<LoginError, string> = {
@@ -82,7 +82,8 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
   }, []);
 
   // ---- 上传 ----
-  const [uploading, setUploading] = useState(0);
+  const [progress, setProgress] = useState<UploadProgress[]>([]);
+  const seq = useRef(0);
 
   // ---- 列表 ----
   const [kind, setKind] = useState("all");
@@ -131,23 +132,30 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
 
   const upsert = (f: FileView) => setFiles((prev) => (prev ? [f, ...prev.filter((x) => x.id !== f.id)] : prev));
 
-  // 上传进度和结果用 toast 提示，上传成功的文件直接出现在文件列表顶部。
+  // 上传进度显示在上传区底部：完成变绿、失败变红，稍等后消失；成功的文件直接出现在列表顶部。
   const onFiles = useCallback(async (list: File[]) => {
-    setUploading((n) => n + list.length);
+    const items: UploadProgress[] = list.map((f) => ({ key: `u${++seq.current}`, name: f.name, ratio: 0, status: "uploading" }));
+    setProgress((prev) => [...prev, ...items]);
+    const patch = (key: string, p: Partial<UploadProgress>) => setProgress((prev) => prev.map((x) => (x.key === key ? { ...x, ...p } : x)));
+    const dismiss = (key: string, ms: number) => setTimeout(() => setProgress((prev) => prev.filter((x) => x.key !== key)), ms);
     let ok = 0;
-    for (const f of list) {
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i]!;
+      const key = items[i]!.key;
       try {
-        const { file } = await api.upload(f);
+        const { file } = await api.upload(f, (ratio) => patch(key, { ratio }));
         ok++;
+        patch(key, { ratio: 1, status: "done" });
+        dismiss(key, 1500);
         upsert(file);
         if (list.length === 1) {
           await copyText(file.urls.raw);
           toast.add({ title: `上传成功，${rawLabel(file)}已复制`, description: file.urls.raw, variant: "success" });
         }
       } catch (e) {
+        patch(key, { ratio: 1, status: "error" });
+        dismiss(key, 4000);
         toast.add({ title: `上传失败：${f.name}`, description: e instanceof Error ? e.message : String(e), variant: "error" });
-      } finally {
-        setUploading((n) => n - 1);
       }
     }
     if (list.length > 1 && ok > 0) toast.add({ title: `已上传 ${ok} 个文件`, variant: "success" });
@@ -249,34 +257,29 @@ export function HomePage({ limits, loginError }: { limits: Limits; loginError: L
           />
         )}
 
-        <UploadZone limits={limits} onFiles={onFiles} />
+        <UploadZone limits={limits} progress={progress} onFiles={onFiles} />
 
         <section className="grid gap-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="grid gap-1">
-              <Text variant="heading" as="h2">文件</Text>
-              <Text variant="secondary">{uploading > 0 ? `正在上传 ${uploading} 个文件…` : user ? (files ? `已加载 ${files.length} 个${cursor ? "，还有更多" : ""}` : "加载中…") : "登录后可以管理全部文件。"}</Text>
-            </div>
-            {user && (
-              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <Tabs
-                  value={kind}
-                  onValueChange={setKind}
-                  tabs={[
-                    { value: "all", label: "全部" },
-                    { value: "image", label: "图片" },
-                    { value: "text", label: "文本" },
-                  ]}
-                />
-                <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
-                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-kumo-subtle">
-                    <MagnifyingGlassIcon size={14} />
-                  </span>
-                  <Input aria-label="搜索" placeholder="按文件名或 id 搜索" value={query} onChange={(e) => setQuery(e.target.value)} className="w-full pl-8" />
-                </div>
+          {user && (
+            // 筛选（全部 / 图片 / 文本）靠左，搜索靠右
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Tabs
+                value={kind}
+                onValueChange={setKind}
+                tabs={[
+                  { value: "all", label: "全部" },
+                  { value: "image", label: "图片" },
+                  { value: "text", label: "文本" },
+                ]}
+              />
+              <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-kumo-subtle">
+                  <MagnifyingGlassIcon size={14} />
+                </span>
+                <Input aria-label="搜索" placeholder="按文件名或 id 搜索" value={query} onChange={(e) => setQuery(e.target.value)} className="w-full pl-8" />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {loadError && <Banner variant="error" icon={<XIcon />} title="加载失败" description={loadError} />}
 

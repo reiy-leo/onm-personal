@@ -46,6 +46,31 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return data as T;
 }
 
+/** POST /api/upload，带上传进度。网络中断抛 TypeError（与 fetch 一致），HTTP 错误抛 ApiError。 */
+function xhrUpload(file: File, onProgress?: (ratio: number) => void): Promise<{ file: FileView }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const fd = new FormData();
+    fd.append("file", file);
+    xhr.open("POST", "/api/upload");
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
+    xhr.onerror = () => reject(new TypeError("network error"));
+    xhr.ontimeout = () => reject(new TypeError("timeout"));
+    xhr.onload = () => {
+      let data: { error?: string; file?: FileView } = {};
+      try { data = JSON.parse(xhr.responseText); } catch { /* 非 JSON 响应 */ }
+      if (xhr.status === 401) {
+        window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+        return reject(new ApiError("需要登录", 401));
+      }
+      if (xhr.status < 200 || xhr.status >= 300) return reject(new ApiError(data.error ?? `请求失败（${statusLabel(xhr.status)}）`, xhr.status));
+      onProgress?.(1);
+      resolve(data as { file: FileView });
+    };
+    xhr.send(fd);
+  });
+}
+
 const json = (body: unknown) => JSON.stringify(body);
 
 export interface SaveResult { file: FileView; version: VersionMeta; unchanged: boolean }
@@ -58,14 +83,15 @@ export const api = {
     if (p.cursor) s.set("cursor", p.cursor);
     return request<ListResponse>(`/api/files?${s}`);
   },
-  /** 上传：遇到超时/网关错误/网络中断自动重试 2 次（408 多是上传途中网络或代理卡住）。 */
-  upload: async (file: File) => {
+  /**
+   * 上传：用 XHR 以便拿到上传进度（onProgress 收到 0–1）。
+   * 遇到超时/网关错误/网络中断自动重试 2 次（408 多是上传途中网络或代理卡住），重试时进度从 0 重新开始。
+   */
+  upload: async (file: File, onProgress?: (ratio: number) => void) => {
     const RETRYABLE = new Set([408, 502, 503, 504, 524]);
     for (let attempt = 0; ; attempt++) {
-      const fd = new FormData();
-      fd.append("file", file);
       try {
-        return await request<{ file: FileView }>("/api/upload", { method: "POST", body: fd });
+        return await xhrUpload(file, onProgress);
       } catch (e) {
         const retryable = e instanceof ApiError ? RETRYABLE.has(e.status) : e instanceof TypeError;
         if (!retryable) throw e;
@@ -73,6 +99,7 @@ export const api = {
           const status = e instanceof ApiError ? e.status : 0;
           throw new ApiError(`上传失败${status ? `（${statusLabel(status)}）` : "（网络中断）"}，已自动重试 2 次`, status);
         }
+        onProgress?.(0);
         await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
       }
     }
